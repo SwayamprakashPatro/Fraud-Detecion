@@ -1,4 +1,4 @@
-# Financial Fraud Detection using GraphSAGE (Graph Machine Learning)
+# Financial Fraud Detection using GraphSAGE
 
 An end-to-end Graph Machine Learning pipeline for financial transaction fraud detection leveraging **GraphSAGE** (Graph Sample and Aggregate) and deep multi-modal feature fusion.
 
