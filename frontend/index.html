@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GraphSAGE Fraud Explorer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Instrument+Sans:wght@400;500;600&family=Fragment+Mono&display=swap"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="top">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--accent-ink)"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            >
+              <circle cx="5" cy="6" r="2.3" />
+              <circle cx="19" cy="7" r="2.3" />
+              <circle cx="12" cy="18" r="2.3" />
+              <path d="M7 6.7l10 .2M6.3 8l4.7 8.2M17.8 9l-4.6 7.2" />
+            </svg>
+          </div>
+          <div>
+            <h1>GraphSAGE Fraud Explorer</h1>
+          </div>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Views">
+          <button role="tab" id="tab-home" aria-selected="true" data-v="home">
+            Home
+          </button>
+          <button role="tab" id="tab-net" aria-selected="false" data-v="net">
+            Transaction network
+          </button>
+        </div>
+      </div>
+
+      <section id="v-home">
+        <div class="card hero">
+          <div>
+            <p class="eyebrow" id="eyebrow">Results on held-out payments</p>
+            <h2 id="headline"></h2>
+            <p id="headsub"></p>
+          </div>
+          <div class="rings" id="rings"></div>
+        </div>
+        <div class="tiles" id="tiles"></div>
+        <div class="provrow">
+          <p class="note" id="prov"></p>
+          <button class="btn" id="reload" type="button" hidden>
+            Reload from model
+          </button>
+        </div>
+
+        <div class="sechead">
+          <h2>Try the alert threshold</h2>
+          <p>
+            The model gives every payment a fraud score. The threshold decides
+            which scores raise an alert.
+          </p>
+        </div>
+        <div class="card">
+          <div class="explorer">
+            <div>
+              <div class="slider-row">
+                <label for="th" class="sr">Alert threshold</label
+                ><input
+                  type="range"
+                  id="th"
+                  min="0.02"
+                  max="0.98"
+                  step="0.01"
+                /><output id="thv" for="th"></output>
+              </div>
+              <div class="ticks">
+                <span>Flag more payments</span><span>Flag fewer payments</span>
+              </div>
+              <div class="trade" id="trade"></div>
+              <p class="note" id="thnote"></p>
+              <button
+                class="btn"
+                id="th-reset"
+                type="button"
+                style="margin-top: 12px"
+              >
+                Back to the saved threshold
+              </button>
+            </div>
+            <div>
+              <div id="cm1"></div>
+              <div class="mrow" id="mrow"></div>
+              <p class="note" id="cm1n"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="sechead project-only">
+          <h2>Look up a payment</h2>
+          <p>
+            Enter a payment ID to see its fraud score and how the model judged
+            it.
+          </p>
+        </div>
+        <div class="card project-only">
+          <form id="lk-form" class="lk" autocomplete="off">
+            <label for="lk-id" class="sr">Payment ID</label>
+            <input
+              id="lk-id"
+              type="number"
+              min="1"
+              step="1"
+              inputmode="numeric"
+              placeholder="Payment ID"
+            />
+            <button class="btn primary" type="submit">Look up</button>
+            <span class="note" id="lk-src" style="margin: 0"></span>
+          </form>
+          <div id="lk-out" aria-live="polite"></div>
+        </div>
+
+        <div class="sechead">
+          <h2>Behind the numbers</h2>
+          <p>
+            How well the scores separate fraud from normal payments, and what
+            happened during training.
+          </p>
+        </div>
+        <div class="cards">
+          <div class="card">
+            <div class="ch">
+              <span class="ic"
+                ><svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M4 20V4M4 20h16" />
+                  <path d="M4 20C6 8 12 5 20 4" /></svg
+              ></span>
+              <h3>ROC curve</h3>
+            </div>
+            <svg
+              class="chart"
+              id="roc"
+              viewBox="0 0 300 270"
+              role="img"
+              aria-label="ROC curve"
+            ></svg>
+            <p class="note" id="rocn"></p>
+          </div>
+          <div class="card">
+            <div class="ch">
+              <span class="ic"
+                ><svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M4 20V4M4 20h16" />
+                  <path d="M5 6h10c3 0 4 3 5 13" /></svg
+              ></span>
+              <h3>Precision and recall</h3>
+            </div>
+            <svg
+              class="chart"
+              id="prc"
+              viewBox="0 0 300 270"
+              role="img"
+              aria-label="Precision recall curve"
+            ></svg>
+            <p class="note" id="prn"></p>
+          </div>
+          <div class="card project-only">
+            <div class="ch">
+              <span class="ic"
+                ><svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M3 18l6-6 4 4 8-9" />
+                  <path d="M15 7h6v6" /></svg
+              ></span>
+              <h3>Training progress</h3>
+            </div>
+            <svg
+              class="chart"
+              id="hist"
+              viewBox="0 0 300 270"
+              role="img"
+              aria-label="Training curves"
+            ></svg>
+            <p class="note" id="histn"></p>
+          </div>
+          <div class="card">
+            <div class="ch">
+              <span class="ic"
+                ><svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M3 12V4h8l9 9-8 8z" />
+                  <circle cx="7.5" cy="8.5" r="1.2" /></svg
+              ></span>
+              <h3>Fraud caught, by type</h3>
+            </div>
+            <div id="bytype"></div>
+            <p class="note" id="bytypen"></p>
+          </div>
+        </div>
+
+        <div class="sechead project-only">
+          <h2>What the model is</h2>
+          <p>
+            The data it learned from and the steps it takes for each payment.
+          </p>
+        </div>
+        <div class="cards project-only">
+          <div class="card">
+            <div class="ch">
+              <span class="ic"
+                ><svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <ellipse cx="12" cy="6" rx="8" ry="3" />
+                  <path
+                    d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"
+                  /></svg
+              ></span>
+              <h3>The data</h3>
+            </div>
+            <dl class="facts" id="facts"></dl>
+          </div>
+          <div class="card span2 wide" id="archcard">
+            <div class="ch">
+              <span class="ic"
+                ><svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="5" cy="6" r="2" />
+                  <circle cx="19" cy="7" r="2" />
+                  <circle cx="12" cy="18" r="2" />
+                  <path d="M7 6.5l10 .3M6 8l5 8M18 9l-5 7" /></svg
+              ></span>
+              <h3>How it scores one payment</h3>
+            </div>
+            <div class="arch">
+              <div class="col">
+                <div class="box a">
+                  <b>1. The network</b>Accounts, devices, shops and UPI IDs,
+                  with <span data-f="nodeIn"></span> simple facts about each
+                  (kind, how many links, how much money).
+                </div>
+                <div class="box e">
+                  <b>2. The payment itself</b
+                  ><span data-f="edgeIn"></span> details: amount, risk scores,
+                  channel, time, KYC, city and more.
+                </div>
+              </div>
+              <div class="arr" aria-hidden="true">&rarr;</div>
+              <div class="col">
+                <div class="box a">
+                  <b>GraphSAGE, 2 layers</b>Each account blends in the average
+                  of its neighbours. Result: a
+                  <span data-f="hidden"></span>-number summary of the sender and
+                  of the receiver.
+                </div>
+                <div class="box e">
+                  <b>Payment encoder</b><span data-f="edgeIn"></span> &rarr;
+                  <span data-f="edgeMid"></span> &rarr;
+                  <span data-f="edgeOut"></span> numbers.
+                </div>
+              </div>
+              <div class="arr" aria-hidden="true">&rarr;</div>
+              <div class="col">
+                <div class="box f">
+                  <b>Fuse (<span data-f="fuse"></span> numbers)</b>sender,
+                  receiver, sender &times; receiver, and the payment summary.
+                </div>
+                <div class="box f">
+                  <b>Classifier</b><span data-f="fuse"></span> &rarr;
+                  <span data-f="c1"></span> &rarr;
+                  <span data-f="c2"></span> &rarr; 1
+                </div>
+              </div>
+              <div class="arr" aria-hidden="true">&rarr;</div>
+              <div class="col">
+                <div class="box o">
+                  <b>Fraud score, 0 to 1</b>An alert is raised when the score
+                  reaches the threshold.
+                </div>
+              </div>
+            </div>
+            <p class="note">
+              Layer sizes and the <span data-f="params"></span> trainable
+              numbers are read from the saved checkpoint. Training setup (Adam,
+              binary cross-entropy, early stopping on validation ROC-AUC) is
+              from the repo's config and trainer.
+            </p>
+          </div>
+        </div>
+
+        <div class="sechead project-only">
+          <h2>Reality check</h2>
+          <p>
+            Claims in the repo, tested against the saved model and the same data
+            split.
+          </p>
+        </div>
+        <div class="card rc project-only">
+          <div class="rc-grid">
+            <div>
+              <h3>Does the graph actually help?</h3>
+              <table class="cmp" id="cmp"></table>
+              <p class="note"><span id="cmpnote"></span></p>
+            </div>
+            <ul class="finds" id="finds"></ul>
+          </div>
+        </div>
+
+        <div class="sechead" id="data">
+          <h2>Use your own data</h2>
+          <p>
+            Bring a CSV exported from MySQL or from the model. Files are read in
+            your browser and never uploaded.
+          </p>
+        </div>
+        <div class="data-grid">
+          <div class="card drop" id="drop">
+            <div class="dz-ic" aria-hidden="true">
+              <svg
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 16V4M7 9l5-5 5 5M4 20h16" />
+              </svg>
+            </div>
+            <h3>Drop your data here</h3>
+            <p class="dz-sub">
+              A CSV exported from MySQL or your notebook. JSON also works.
+            </p>
+            <input
+              class="sr"
+              type="file"
+              id="file"
+              accept=".csv,.tsv,.txt,.json,text/csv,application/json"
+            />
+            <label class="btn primary" for="file">Choose file</label>
+            <p class="note" id="fileerr" role="status"></p>
+            <button class="btn ghost" id="demo-btn" type="button" hidden>
+              Back to the project results
+            </button>
+          </div>
+          <div class="card">
+            <div class="ch"><h3>How to bring it in</h3></div>
+            <ol class="steps">
+              <li>
+                <b>Export from MySQL</b
+                ><span
+                  >Run the query below and save the result as CSV. You get the
+                  network and the fraud labels.</span
+                >
+              </li>
+              <li>
+                <b>Add model scores (optional)</b
+                ><span
+                  >Run the notebook export to add a fraud score and the train,
+                  validation or test split.</span
+                >
+              </li>
+              <li>
+                <b>Drop the file here</b
+                ><span>Every chart and the network recompute from it.</span>
+              </li>
+            </ol>
+          </div>
+          <div class="card">
+            <div class="ch"><h3>Columns it understands</h3></div>
+            <div class="fields">
+              <div class="f">
+                <div><code>Transaction_ID</code><span>Payment ID</span></div>
+                <em class="req">needed</em>
+              </div>
+              <div class="f">
+                <div><code>Amount</code><span>Amount in rupees</span></div>
+                <em class="req">needed</em>
+              </div>
+              <div class="f">
+                <div><code>Sender_Account</code><span>Who paid</span></div>
+                <em class="req">needed</em>
+              </div>
+              <div class="f">
+                <div>
+                  <code>Receiver_Account</code><span>Who received</span>
+                </div>
+                <em class="req">needed</em>
+              </div>
+              <div class="f">
+                <div>
+                  <code>Fraud_Type</code
+                  ><span>Or <code>Label</code> (0 or 1)</span>
+                </div>
+                <em class="opt">optional</em>
+              </div>
+              <div class="f">
+                <div>
+                  <code>Predicted_Prob</code><span>Model score, 0 to 1</span>
+                </div>
+                <em class="opt">optional</em>
+              </div>
+              <div class="f">
+                <div><code>Split</code><span>train, val or test</span></div>
+                <em class="opt">optional</em>
+              </div>
+              <div class="f">
+                <div>
+                  <code>Device_ID, Merchant_ID, UPI_ID</code
+                  ><span>Extra network nodes</span>
+                </div>
+                <em class="opt">optional</em>
+              </div>
+              <div class="f">
+                <div>
+                  <code>Channel, Transaction_Timestamp</code
+                  ><span>For tooltips and timing</span>
+                </div>
+                <em class="opt">optional</em>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card code">
+          <div class="codehead">
+            <div class="seg glass" role="group" aria-label="Snippet">
+              <button type="button" id="sn-sql" aria-pressed="true">
+                MySQL query</button
+              ><button type="button" id="sn-py" aria-pressed="false">
+                Model export
+              </button>
+            </div>
+            <button class="btn" id="copy" type="button">Copy</button>
+          </div>
+          <pre id="snip-sql">
+-- Same joins as build_graph.py. Run in MySQL, then save the result as CSV.
+SELECT
+  t.Transaction_ID,
+  t.Amount,
+  t.Channel,
+  t.Transaction_Timestamp,
+  t.Sender_Account_ID   AS Sender_Account,
+  t.Receiver_Account_ID AS Receiver_Account,
+  t.Device_ID,
+  t.Merchant_ID,
+  t.UPI_ID,
+  f.Fraud_Type,
+  COALESCE(f.Label, 0)  AS Label
+FROM `TRANSACTION` t
+LEFT JOIN FRAUD_CASE f
+  ON t.Transaction_ID = f.Transaction_ID;</pre
+          >
+          <pre id="snip-py" hidden>
+# Run from the project root, next to train.py. Needs the repo's requirements.
+import pickle, numpy as np, pandas as pd, torch
+from src.config import config
+from src.data_loader import FraudGraphDataset
+from src.models.graphsage import FraudGraphSAGE
+
+ds = FraudGraphDataset()
+data, meta = ds.load_data()
+model = FraudGraphSAGE()
+ck = torch.load(config.BEST_MODEL_PATH, map_location="cpu")
+model.load_state_dict(ck["model_state_dict"])
+model.eval()
+prob = model.predict_proba(data.x, data.edge_index, data.tx_src,
+                           data.tx_dst, data.tx_edge_attr).numpy()
+
+# Same ordering as the loader: Cleaned_Database.csv sorted by Transaction_ID.
+ids = (pd.read_csv(config.CSV_DATA_PATH, usecols=["Transaction_ID"])
+         ["Transaction_ID"].sort_values().astype(int).tolist())
+split = np.where(data.test_mask.numpy(), "test",
+        np.where(data.val_mask.numpy(), "val", "train"))
+info = {}
+G = pickle.load(open(config.GRAPH_PATH, "rb"))
+for u, v, k, d in G.edges(keys=True, data=True):
+    row = info.setdefault(int(k), {})
+    t = d.get("type")
+    if t == "transaction":
+        row.update(Sender_Account=u.split("_")[1], Receiver_Account=v.split("_")[1],
+                   Amount=d.get("amount"), Channel=d.get("channel"),
+                   Transaction_Timestamp=d.get("timestamp"),
+                   Fraud_Type=d.get("fraud_type") if d.get("label") == 1 else None)
+    elif t == "used_device": row["Device_ID"] = v.split("_")[1]
+    elif t == "merchant":    row["Merchant_ID"] = v.split("_")[1]
+    elif t == "upi_used":    row["UPI_ID"] = v.split("_")[1]
+rows = []
+for i, tid in enumerate(ids[:len(prob)]):
+    rows.append({"Transaction_ID": tid, **info.get(tid, {}),
+                 "Predicted_Prob": round(float(prob[i]), 4), "Split": split[i]})
+pd.DataFrame(rows).to_csv("fraud_data.csv", index=False)</pre
+          >
+        </div>
+      </section>
+
+      <section id="v-net" hidden>
+        <div class="card guide">
+          <div class="gi">
+            <svg
+              viewBox="0 0 44 44"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+            >
+              <circle
+                cx="11"
+                cy="14"
+                r="6"
+                fill="currentColor"
+                fill-opacity=".25"
+              />
+              <rect
+                x="26"
+                y="8"
+                width="12"
+                height="12"
+                fill="currentColor"
+                fill-opacity=".25"
+              />
+              <path d="M11 28l7 9H4z" fill="currentColor" fill-opacity=".25" />
+              <path
+                d="M33 26l7 7-7 7-7-7z"
+                fill="currentColor"
+                fill-opacity=".25"
+              />
+            </svg>
+            <div>
+              <h4>Shapes are kinds of dot</h4>
+              <p>
+                Circle: account. Diamond: shop. Square: device. Triangle: UPI
+                ID. Turn on <b>Show devices, shops and UPI</b> to see the last
+                three. Bigger means more payments.
+              </p>
+            </div>
+          </div>
+          <div class="gi">
+            <svg viewBox="0 0 44 44" fill="none" stroke-linecap="round">
+              <path d="M6 14h32" stroke="var(--legit)" stroke-width="1.5" />
+              <path d="M6 30h32" stroke="var(--t1)" stroke-width="4" />
+            </svg>
+            <div>
+              <h4>Lines are payments</h4>
+              <p>
+                Thicker means more money. Coloured lines are fraud, one colour
+                per kind. Grey lines are normal payments.
+              </p>
+            </div>
+          </div>
+          <div class="gi">
+            <svg
+              viewBox="0 0 44 44"
+              fill="none"
+              stroke="var(--tp)"
+              stroke-width="1.6"
+              stroke-linecap="round"
+            >
+              <circle
+                cx="22"
+                cy="22"
+                r="14"
+                stroke-opacity=".3"
+                fill="var(--tp)"
+                fill-opacity=".1"
+              />
+              <circle cx="22" cy="22" r="4" fill="var(--tp)" />
+              <path
+                d="M22 18V5M26 22h13M22 26v13M18 22H5M25 19l9-9M25 25l9 9M19 25l-9 9M19 19l-9-9"
+                stroke-opacity=".5"
+              />
+            </svg>
+            <div>
+              <h4>Crowds are a clue</h4>
+              <p>
+                Many fraud lines meeting at one dot can mean stolen money is
+                collected there. Dots with a red ring are the biggest hotspots.
+                Hover any dot for the full story.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="shell">
+          <div class="canvas" id="stage">
+            <svg
+              id="net"
+              role="img"
+              aria-label="Network of payments between accounts, devices, shops and UPI IDs"
+            ></svg>
+            <svg
+              id="alt"
+              hidden
+              role="img"
+              aria-label="Alternative picture of the fraud data"
+            ></svg>
+            <div class="toolbar">
+              <div class="seg glass" role="group" aria-label="Choose a picture">
+                <button type="button" id="vw-net" aria-pressed="true">
+                  Network
+                </button>
+                <button type="button" id="vw-cl" aria-pressed="false">
+                  Clusters
+                </button>
+                <button type="button" id="vw-fl" aria-pressed="false">
+                  Money flow
+                </button>
+                <button type="button" id="vw-tm" aria-pressed="false">
+                  Timing
+                </button>
+              </div>
+              <span id="tb-net" class="tb-net">
+                <div
+                  class="seg glass"
+                  role="group"
+                  aria-label="Which payments to show"
+                >
+                  <button type="button" id="v-fraud" aria-pressed="true">
+                    Fraud only
+                  </button>
+                  <button type="button" id="v-all" aria-pressed="false">
+                    All payments
+                  </button>
+                </div>
+                <label class="toggle glass"
+                  ><input type="checkbox" id="f-miss" /> Show model
+                  mistakes</label
+                >
+                <label class="toggle glass"
+                  ><input type="checkbox" id="f-links" /> Devices, shops,
+                  UPI</label
+                >
+                <button class="tbtn" id="f-reset" type="button">Reset</button>
+              </span>
+            </div>
+            <div class="zoom" id="zoombox">
+              <button
+                type="button"
+                id="zfit"
+                aria-label="Fit to screen"
+                title="Fit to screen"
+                style="font-size: 14px"
+              >
+                &#9635;</button
+              ><button type="button" id="zin" aria-label="Zoom in">+</button
+              ><button type="button" id="zout" aria-label="Zoom out">
+                &minus;
+              </button>
+            </div>
+            <div class="legend" id="legend"></div>
+            <div id="tip"></div>
+          </div>
+          <div class="rail">
+            <div class="rail-in">
+              <div class="card" id="side"></div>
+              <div class="card">
+                <h3>Kinds of fraud</h3>
+                <p class="note" style="margin: 0 0 6px">
+                  Click one to hide or show it.
+                </p>
+                <div id="f-types"></div>
+              </div>
+              <div class="card" id="hot"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <script src="js/vendor/d3.min.js"></script>
+    <script src="js/data.js"></script>
+    <!-- offline snapshot, used only when the API is not reachable -->
+    <script src="js/app.js"></script>
+  </body>
+</html>

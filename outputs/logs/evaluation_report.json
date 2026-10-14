@@ -1,0 +1,21 @@
+{
+    "test_metrics": {
+        "accuracy": 0.9755555555555555,
+        "precision": 0.9750889679715302,
+        "recall": 0.9133333333333333,
+        "f1": 0.9432013769363167,
+        "roc_auc": 0.9954000000000001,
+        "pr_auc": 0.9898954521834554,
+        "threshold": 0.28
+    },
+    "test_confusion_matrix": {
+        "TN": 1043,
+        "FP": 7,
+        "FN": 26,
+        "TP": 274
+    },
+    "best_validation_roc_auc": 0.9938063492063491,
+    "optimal_threshold": 0.28,
+    "total_epochs_trained": 60,
+    "training_time_seconds": 4.732938289642334
+}
